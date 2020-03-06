@@ -81,10 +81,11 @@ function generateDockerComposeFile (opts) {
         const key = kv[0].trim()
         switch (key) {
           case 'KAFKA_CFG_LISTENERS':
-          case 'KAFKA_CFG_ADVERTISED_LISTENERS':
+          case 'KAFKA_CFG_ADVERTISED_LISTENERS': {
             const values = kv[1].split(',').map(it => it.trim())
             values[1] = values[1].replace(/29092$/g, kafkaPort)
             return `${key}=${values.join(',')}`
+          }
           default:
             return it
         }
