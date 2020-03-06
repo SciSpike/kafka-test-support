@@ -1,0 +1,111 @@
+{
+  "name": "@northscaler/kafka-test-support",
+  "version": "0.1.0-pre.0",
+  "description": "Kafka Node.js Development Test Support Library",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/northscaler-public/kafka-test-support.git"
+  },
+  "keywords": [
+    "kafka",
+    "test"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.6.0"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install && npm test",
+    "transpile": "run-s transpile-main transpile-test",
+    "clean": "rimraf lib/main",
+    "copy-src": "mkdirp lib/main/src && cp -r src/main/* lib/main/src",
+    "pretranspile-main": "run-s clean copy-src",
+    "transpile-main": "babel --verbose --out-dir lib/main --copy-files lib/main/src",
+    "transpile-test": "babel --delete-dir-on-start --verbose --out-dir lib/test --copy-files src/test",
+    "unit-integration": "nyc -x 'lib/test' --exclude-after-remap false mocha 'lib/test/unit/**/*.spec.js' 'lib/test/integration/**/*.spec.js'",
+    "integration": "nyc --check-coverage -x 'lib/test' --exclude-after-remap false mocha 'lib/test/integration/**/*.spec.js'",
+    "postintegration": "run-s report",
+    "i": "mocha 'src/test/integration/**/*.spec.js' | npx bunyan",
+    "unit": "nyc -x 'lib/test' --exclude-after-remap false mocha 'lib/test/unit/**/*.spec.js'",
+    "u": "mocha 'src/test/unit/**/*.spec.js' | npx bunyan",
+    "test": "run-s transpile unit-integration lint",
+    "report": "nyc report --reporter=html",
+    "cov": "open coverage/index.html",
+    "lint": "standard --verbose 'src/**/*.js'",
+    "format": "standard --fix 'src/**/*.js'",
+    "make-distribution": "run-s transpile finalize-distribution doc",
+    "finalize-distribution": "cp package.json package-lock.json README.md lib/main",
+    "doc": "jsdoc --verbose -d lib/main/doc -r -c jsdoc.json -R lib/main/README.md lib/main",
+    "prelink": "run-s make-distribution",
+    "link": "mkdirp lib/main && cd lib/main && npm link; cd ../..",
+    "unlink": "mkdirp lib/main && cd lib/main && npm unlink; cd ../.."
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@babel/polyfill": "7.7.0",
+    "uuid": "3.3.3"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.7.4",
+    "@babel/core": "7.7.4",
+    "@babel/plugin-proposal-class-properties": "7.7.4",
+    "@babel/plugin-proposal-decorators": "7.7.4",
+    "@babel/plugin-proposal-optional-chaining": "7.7.4",
+    "@babel/plugin-proposal-throw-expressions": "7.7.4",
+    "@babel/preset-env": "7.7.4",
+    "@babel/register": "7.7.4",
+    "acorn": "7.1.0",
+    "babel-eslint": "10.0.3",
+    "bluebird": "3.7.2",
+    "chai": "4.2.0",
+    "copyfiles": "2.1.1",
+    "dirty-chai": "2.0.1",
+    "jsdoc": "3.6.3",
+    "kafkajs": "1.12.0",
+    "mocha": "6.2.2",
+    "npm-run-all": "4.1.5",
+    "nyc": "14.1.1",
+    "standard": "14.3.1"
+  },
+  "babel": {
+    "sourceMaps": "inline",
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": true
+          }
+        }
+      ]
+    ],
+    "plugins": [
+      [
+        "@babel/plugin-proposal-optional-chaining",
+        {
+          "loose": false
+        }
+      ],
+      [
+        "@babel/plugin-proposal-throw-expressions"
+      ],
+      [
+        "@babel/plugin-proposal-class-properties",
+        {
+          "loose": true
+        }
+      ]
+    ]
+  },
+  "standard": {
+    "parser": "babel-eslint"
+  },
+  "mocha": {
+    "colors": true,
+    "require": "@babel/register",
+    "exit": true
+  }
+}
