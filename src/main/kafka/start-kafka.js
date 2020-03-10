@@ -7,6 +7,6 @@ module.exports = async ({
   scriptArgs = [],
   pauseMillis = 0
 } = {}) => {
-  cp.execFileSync(`${__dirname}/start-kafka.sh`, scriptArgs)
+  console.log(`${cp.execFileSync(`${__dirname}/start-kafka.sh`, scriptArgs)}`)
   if ((pauseMillis = parseInt(pauseMillis))) await pause(pauseMillis)
 }
