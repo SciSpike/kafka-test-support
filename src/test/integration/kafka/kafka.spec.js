@@ -1,7 +1,6 @@
 /* global describe, it */
 'use strict'
 
-const { Kafka } = require('kafkajs')
 const uuid = require('uuid/v4')
 const chai = require('chai')
 chai.use(require('dirty-chai'))
@@ -29,11 +28,9 @@ describe('integration tests of kafka', function () {
       let consumer
 
       async function fn () {
-        const kafkaInfo = await kafkaConnect()
+        const kafka = await kafkaConnect()
 
-        kafka = new Kafka({ clientId, brokers: kafkaInfo.brokers })
-
-        admin = kafka.admin()
+        const admin = kafka.admin()
 
         while (true) {
           try {
@@ -105,6 +102,7 @@ describe('integration tests of kafka', function () {
           })
         })
         .catch(async e => {
+          console.log(e)
           tryTearDown()
         })
     })

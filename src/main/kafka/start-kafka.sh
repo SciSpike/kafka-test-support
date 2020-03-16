@@ -7,4 +7,12 @@ if [ -n "$CI" ]; then # we're in CI pipeline & not forcing start
   exit 0
 fi
 
-"$THIS_DIR/start-kafka-docker-compose.sh"
+if [ -z "$KAFKA_TEST_SUPPORT_CONTAINER" ]; then
+  KAFKA_TEST_SUPPORT_CONTAINER="$(cat $THIS_DIR/default-kafka-test-container)"
+fi
+
+if [ -z "$KAFKA_TEST_SUPPORT_KAFKA_PORT" ]; then
+  KAFKA_TEST_SUPPORT_KAFKA_PORT="$(cat $THIS_DIR/default-kafka-test-port)"
+fi
+
+"$THIS_DIR/start-kafka-container.sh"
