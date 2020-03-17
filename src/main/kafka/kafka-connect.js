@@ -10,7 +10,8 @@ let dockerComposeInfo
 async function kafkaConnect ({
   dockerComposeFile,
   generatedDockerComposeFilePathname,
-  kafkaPort,
+  kafkaPlaintextPort,
+  kafkaPlaintextHostPort,
   kafkaTag,
   zookeeperPort,
   zookeeperTag
@@ -23,7 +24,7 @@ async function kafkaConnect ({
   } else {
     dockerComposeInfo = generateDockerComposeFile(arguments[0])
     process.env.KAFKA_TEST_SUPPORT_DOCKER_COMPOSE_FILE = dockerComposeInfo.dockerComposeFile
-    dockerComposeInfo.brokers = [`localhost:${dockerComposeInfo.kafkaPort}`]
+    dockerComposeInfo.brokers = [`localhost:${dockerComposeInfo.kafkaPlaintextPort}`]
   }
 
   await startKafka()
@@ -36,8 +37,11 @@ function generateDockerComposeFile (opts) {
 
   const dockerComposeFile = opts.generatedDockerComposeFilePathname || `${os.tmpdir()}/kafka-test-support.docker-compose.yml`
 
-  const kafkaPort = parseInt(opts.kafkaPort || process.env.KAFKA_TEST_SUPPORT_KAFKA_PORT || fs.readFileSync(`${__dirname}/default-kafka-test-port`).toString('utf8').trim())
-  if (!kafkaPort) throw new Error('invalid kafkaPort')
+  const kafkaPlaintextPort = parseInt(opts.kafkaPlaintextPort || process.env.KAFKA_TEST_SUPPORT_KAFKA_PLAINTEXT_PORT || fs.readFileSync(`${__dirname}/default-kafka-plaintext-test-port`).toString('utf8').trim())
+  if (!kafkaPlaintextPort) throw new Error('invalid kafkaPlaintextPort')
+
+  const kafkaPlaintextHostPort = parseInt(opts.kafkaPlaintextHostPort || process.env.KAFKA_TEST_SUPPORT_KAFKA_PLAINTEXT_HOST_PORT || fs.readFileSync(`${__dirname}/default-kafka-plaintext-host-test-port`).toString('utf8').trim())
+  if (!kafkaPlaintextHostPort) throw new Error('invalid kafkaPlaintextHostPort')
 
   const kafkaTag = opts.kafkaTag || process.env.KAFKA_TEST_SUPPORT_KAFKA_TAG || '2'
   if (!kafkaTag) throw new Error('invalid kafkaTag')
@@ -50,42 +54,59 @@ function generateDockerComposeFile (opts) {
 
   const dockerComposeInfo = {
     dockerComposeFile,
-    kafkaPort,
+    kafkaPlaintextPort,
     kafkaTag,
     zookeeperPort,
     zookeeperTag
   }
 
-  const dockerCompose = require(`${__dirname}/docker-compose.json`)
+  const dockerCompose = require(`${__dirname}/docker-compose`)
 
-  // see if the user overrode zookeeper port 2181 with something else & handle
+  dockerCompose.services.zookeeper.image = `bitnami/zookeeper:${zookeeperTag}`
+  dockerCompose.services.kafka.image = `bitnami/kafka:${kafkaTag}`
+
+  // see if the user overrode zookeeper port 22181 with something else & handle
   let ports = dockerCompose.services.zookeeper.ports
   if (zookeeperPort !== parseInt(ports[0].split(':')[0])) {
-    ports.push(`${zookeeperPort}:2181`)
+    ports[0] = `${zookeeperPort}:${zookeeperPort}`
+
+    dockerCompose.services.zookeeper.environment = dockerCompose.services.zookeeper.environment
+      .map(it => {
+        const kv = it.split('=')
+        if (kv[0].trim() === 'ZOO_PORT_NUMBER') {
+          return `ZOO_PORT_NUMBER=${zookeeperPort}`
+        }
+        return it
+      })
+
     dockerCompose.services.kafka.environment = dockerCompose.services.kafka.environment
       .map(it => {
         const kv = it.split('=')
-        if ((kv[0] = kv[0].trim()) !== 'KAFKA_CFG_ZOOKEEPER_CONNECT') return it
-
-        return it // `${kv[0]}=zookeeper:${zookeeperPort}`
+        if (kv[0].trim() === 'KAFKA_CFG_ZOOKEEPER_CONNECT') {
+          return `KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:${zookeeperPort}`
+        }
+        return it
       })
   }
 
-  // see if the user overrode kafka port 29092 with something else & handle
+  // see if the user overrode kafka plaintext host port 39092 or plaintext port 29092 with something else & handle
   ports = dockerCompose.services.kafka.ports
-  if (kafkaPort !== parseInt(ports[1].split(':')[0])) {
-    ports[1] = `${kafkaPort}:${kafkaPort}`
+
+  if (kafkaPlaintextHostPort !== parseInt(ports[0].split(':')[0])) {
+    ports[0] = `${kafkaPlaintextHostPort}:9092`
+  }
+
+  if (kafkaPlaintextPort !== parseInt(ports[1].split(':')[0])) {
+    ports[1] = `${kafkaPlaintextPort}:${kafkaPlaintextPort}`
     dockerCompose.services.kafka.environment = dockerCompose.services.kafka.environment
       .map(it => {
         const kv = it.split('=')
         const key = kv[0].trim()
         switch (key) {
           case 'KAFKA_CFG_LISTENERS':
-          case 'KAFKA_CFG_ADVERTISED_LISTENERS': {
-            const values = kv[1].split(',').map(it => it.trim())
-            values[1] = values[1].replace(/29092$/g, kafkaPort)
-            return `${key}=${values.join(',')}`
-          }
+            return `KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://:${kafkaPlaintextPort}`
+          case 'KAFKA_CFG_ADVERTISED_LISTENERS':
+            return `KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:${kafkaPlaintextPort}`
           default:
             return it
         }
