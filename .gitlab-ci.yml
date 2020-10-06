@@ -3,7 +3,7 @@
     echo "$NPM_SCOPE:registry=https://$NPM_REGISTRY_HOST/" >> ~/.npmrc
     echo "//$NPM_REGISTRY_HOST/:_authToken=$NPM_TOKEN" >> ~/.npmrc
 
-image: node:8.6.0-alpine
+image: node:10.4.0-alpine
 
 cache:
   paths:
