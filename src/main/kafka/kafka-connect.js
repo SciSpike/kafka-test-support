@@ -14,7 +14,8 @@ async function kafkaConnect ({
   kafkaPlaintextHostPort,
   kafkaTag,
   zookeeperPort,
-  zookeeperTag
+  zookeeperTag,
+  brokerOpts
 } = {}) {
   if (dockerComposeInfo) return dockerComposeInfo
 
@@ -43,13 +44,13 @@ function generateDockerComposeFile (opts) {
   const kafkaPlaintextHostPort = parseInt(opts.kafkaPlaintextHostPort || process.env.KAFKA_TEST_SUPPORT_KAFKA_PLAINTEXT_HOST_PORT || fs.readFileSync(`${__dirname}/default-kafka-plaintext-host-test-port`).toString('utf8').trim())
   if (!kafkaPlaintextHostPort) throw new Error('invalid kafkaPlaintextHostPort')
 
-  const kafkaTag = opts.kafkaTag || process.env.KAFKA_TEST_SUPPORT_KAFKA_TAG || '2'
+  const kafkaTag = opts.kafkaTag || process.env.KAFKA_TEST_SUPPORT_KAFKA_TAG || 'latest'
   if (!kafkaTag) throw new Error('invalid kafkaTag')
 
   const zookeeperPort = parseInt(opts.zookeeperPort || process.env.KAFKA_TEST_SUPPORT_ZOOKEEPER_PORT || fs.readFileSync(`${__dirname}/default-zookeeper-test-port`).toString('utf8').trim())
   if (!zookeeperPort) throw new Error('invalid zookeeperPort')
 
-  const zookeeperTag = opts.zookeeperTag || process.env.ZOOKEEPER_TEST_SUPPORT_ZOOKEEPER_TAG || '3'
+  const zookeeperTag = opts.zookeeperTag || process.env.ZOOKEEPER_TEST_SUPPORT_ZOOKEEPER_TAG || 'latest'
   if (!zookeeperTag) throw new Error('invalid zookeeperTag')
 
   const dockerComposeInfo = {
@@ -111,6 +112,12 @@ function generateDockerComposeFile (opts) {
             return it
         }
       })
+  }
+
+  if (opts.brokerOpts) {
+    Object.keys(opts.brokerOpts).forEach(key => {
+      dockerCompose.services.kafka.environment.push(`KAFKA_CFG_${key.toUpperCase().replace(/\./g, '_')}=${opts.brokerOpts[key]}`)
+    })
   }
 
   fs.writeFileSync(dockerComposeFile, JSON.stringify(dockerCompose, null, 2), { encoding: 'utf8' })

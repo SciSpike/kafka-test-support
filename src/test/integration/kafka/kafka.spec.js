@@ -2,7 +2,7 @@
 'use strict'
 
 const { Kafka } = require('kafkajs')
-const uuid = require('uuid/v4')
+const uuid = require('uuid').v4
 const chai = require('chai')
 chai.use(require('dirty-chai'))
 const expect = chai.expect
@@ -11,102 +11,104 @@ const kafkaConnect = require('../../../main')
 
 describe('integration tests of kafka', function () {
   describe('kafka-connect', function () {
-    it('should work', function (done) {
-      if (process.env.CI) { // don't run this in CI pipeline
-        console.log('skipping because in CI pipeline')
-        done()
+    let kafka
+    let admin
+    let consumer
+    let tornDown
+    const topic = uuid()
+
+    async function tryTearDown () {
+      if (tornDown) return
+
+      try {
+        if (consumer) await consumer.disconnect()
+      } catch (e) {
+        console.log('WARN: could not disconnect consumer')
       }
 
-      this.timeout(40000)
+      try {
+        if (admin) await admin.deleteTopics({ topics: [topic] })
+      } catch (e) {
+        console.log('WARN: could not delete topics')
+      }
 
-      const clientId = uuid()
-      const groupId = uuid()
-      const topic = uuid()
-      const value = uuid()
+      try {
+        if (admin) await admin.disconnect()
+      } catch (e) {
+        console.log('WARN: could not disconnect admin')
+      }
 
-      let kafka
-      let admin
-      let consumer
+      tornDown = true
+    }
 
-      async function fn () {
-        const kafkaInfo = await kafkaConnect()
-
-        kafka = new Kafka({ clientId, brokers: kafkaInfo.brokers })
-
-        admin = kafka.admin()
-
-        while (true) {
-          try {
-            await admin.connect()
-            break
-          } catch (e) {
-            console.log('WARN: could not connect; retrying...')
+    it('should work', async function () {
+      // eslint-disable-next-line no-async-promise-executor
+      return new Promise(async (resolve, reject) => {
+        try {
+          if (process.env.CI) { // don't run this in CI pipeline
+            console.log('skipping because in CI pipeline')
+            resolve()
           }
-        }
-        await admin.createTopics({ topics: [{ topic }] })
 
-        const producer = kafka.producer()
+          this.timeout(40000)
 
-        await producer.connect()
-        await producer.send({
-          topic,
-          messages: [
-            { value }
-          ]
-        })
-        try {
-          await producer.disconnect()
-        } catch (e) {
-          console.log('WARN: could not disconnect producer')
-        }
-      }
+          const clientId = uuid()
+          const groupId = uuid()
+          const value = uuid()
 
-      async function tryTearDown () {
-        try {
-          if (consumer) await consumer.disconnect()
-        } catch (e) {
-          console.log('WARN: could not disconnect consumer')
-        }
+          const kafkaInfo = await kafkaConnect({
+            brokerOpts: {
+              'log.retention.ms': 1000
+            }
+          })
 
-        try {
-          if (admin) await admin.deleteTopics({ topics: [topic] })
-        } catch (e) {
-          console.log('WARN: could not delete topics')
-        }
+          kafka = new Kafka({ clientId, brokers: kafkaInfo.brokers })
 
-        try {
-          if (admin) await admin.disconnect()
-        } catch (e) {
-          console.log('WARN: could not disconnect admin')
-        }
-      }
+          admin = kafka.admin()
 
-      fn()
-        .then(() => {
+          while (true) {
+            try {
+              await admin.connect()
+              break
+            } catch (e) {
+              console.log('WARN: could not connect; retrying...')
+            }
+          }
+          await admin.createTopics({ topics: [{ topic }] })
+
+          const producer = kafka.producer()
+          await producer.connect()
+          await producer.send({
+            topic,
+            messages: [
+              { value }
+            ]
+          })
+          try {
+            await producer.disconnect()
+          } catch (e) {
+            console.log('WARN: could not disconnect producer')
+          }
+
           consumer = kafka.consumer({ groupId })
-          return consumer.connect()
-        })
-        .then(() => {
-          return consumer.subscribe({ topic, fromBeginning: true })
-        })
-        .then(() => {
-          let err
-          return consumer.run({
+          await consumer.connect()
+          await consumer.subscribe({ topic, fromBeginning: true })
+          await consumer.run({
             eachMessage: async ({ message }) => {
               try {
                 expect(message.value.toString()).to.equal(value)
               } catch (e) {
-                err = e
+                reject(e)
               } finally {
                 tryTearDown()
               }
-              done(err)
+              resolve()
             }
           })
-        })
-        .catch(async e => {
-          tryTearDown()
-        })
+        } catch (e) {
+          reject(e)
+        }
+      })
     })
   })
 })

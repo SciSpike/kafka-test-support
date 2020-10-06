@@ -2,7 +2,7 @@ module.exports = { // this will become a docker compose file
   version: '2',
   services: {
     zookeeper: {
-      image: 'bitnami/zookeeper:3',
+      image: 'bitnami/zookeeper',
       tmpfs: '/datalog', // see https://github.com/wurstmeister/kafka-docker/issues/389#issuecomment-467408013
       ports: [
         // this will be modified if user overrides any default ports
@@ -18,7 +18,7 @@ module.exports = { // this will become a docker compose file
       ]
     },
     kafka: {
-      image: 'bitnami/kafka:2',
+      image: 'bitnami/kafka',
       ports: [
         '39092:9092', // default kafkaPlaintextHostPort (39092)
         '29092:29092' // default kafkaPlaintextPort
