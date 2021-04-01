@@ -1,6 +1,6 @@
 {
   "name": "@northscaler/kafka-test-support",
-  "version": "0.1.0",
+  "version": "0.1.1-rc.0",
   "description": "Kafka Node.js Development Test Support Library",
   "repository": {
     "type": "git",
