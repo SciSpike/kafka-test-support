@@ -1,4 +1,4 @@
-lib/
+dist/
 .firebaserc
 firebase.json
 .firestore.indexes.*.json
