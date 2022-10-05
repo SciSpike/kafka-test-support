@@ -1,10 +1,10 @@
 {
-  "name": "@northscaler/kafka-test-support",
+  "name": "@ballistagroup/kafka-test-support",
   "version": "0.2.0-pre.3",
-  "description": "Kafka Node.js Development Test Support Library",
+  "description": "Kafka Node.js Development Test Support distrary",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/northscaler-public/kafka-test-support.git"
+    "url": "https://gitlab.com/ballistagroup-public/kafka-test-support.git"
   },
   "keywords": [
     "kafka",
@@ -15,16 +15,16 @@
   "scripts": {
     "build": "npm install && npm test",
     "transpile": "run-s transpile-main transpile-test",
-    "clean": "rimraf lib/main",
-    "copy-src": "mkdirp lib/main/src && cp -r src/main/* lib/main/src",
+    "clean": "rimraf dist/main",
+    "copy-src": "mkdirp dist/main/src && cp -r src/main/* dist/main/src",
     "pretranspile-main": "run-s clean copy-src",
-    "transpile-main": "babel --verbose --out-dir lib/main --copy-files lib/main/src",
-    "transpile-test": "babel --delete-dir-on-start --verbose --out-dir lib/test --copy-files src/test",
-    "unit-integration": "nyc -x 'lib/test' --exclude-after-remap false mocha 'lib/test/unit/**/*.spec.js' 'lib/test/integration/**/*.spec.js'",
-    "integration": "nyc --check-coverage -x 'lib/test' --exclude-after-remap false mocha 'lib/test/integration/**/*.spec.js'",
+    "transpile-main": "babel --verbose --out-dir dist/main --copy-files dist/main/src",
+    "transpile-test": "babel --delete-dir-on-start --verbose --out-dir dist/test --copy-files src/test",
+    "unit-integration": "nyc -x 'dist/test' --exclude-after-remap false mocha 'dist/test/unit/**/*.spec.js' 'dist/test/integration/**/*.spec.js'",
+    "integration": "nyc --check-coverage -x 'dist/test' --exclude-after-remap false mocha 'dist/test/integration/**/*.spec.js'",
     "postintegration": "run-s report",
     "i": "mocha 'src/test/integration/**/*.spec.js' | npx bunyan",
-    "unit": "nyc -x 'lib/test' --exclude-after-remap false mocha 'lib/test/unit/**/*.spec.js'",
+    "unit": "nyc -x 'dist/test' --exclude-after-remap false mocha 'dist/test/unit/**/*.spec.js'",
     "u": "mocha 'src/test/unit/**/*.spec.js' | npx bunyan",
     "test": "run-s transpile unit-integration lint",
     "report": "nyc report --reporter=html",
@@ -32,11 +32,11 @@
     "lint": "standard --verbose 'src/**/*.js'",
     "format": "standard --fix 'src/**/*.js'",
     "make-distribution": "run-s transpile finalize-distribution doc",
-    "finalize-distribution": "cp package.json package-lock.json README.md lib/main",
-    "doc": "jsdoc --verbose -d lib/main/doc -r -c jsdoc.json -R lib/main/README.md lib/main",
+    "finalize-distribution": "cp package.json package-lock.json README.md dist/main",
+    "doc": "jsdoc --verbose -d dist/main/doc -r -c jsdoc.json -R dist/main/README.md dist/main",
     "prelink": "run-s make-distribution",
-    "link": "mkdirp lib/main && cd lib/main && npm link; cd ../..",
-    "unlink": "mkdirp lib/main && cd lib/main && npm unlink; cd ../.."
+    "link": "mkdirp dist/main && cd dist/main && npm link; cd ../..",
+    "unlink": "mkdirp dist/main && cd dist/main && npm unlink; cd ../.."
   },
   "publishConfig": {
     "access": "public"
@@ -60,9 +60,9 @@
     "chai": "4.3.4",
     "copyfiles": "2.4.1",
     "dirty-chai": "2.0.1",
-    "jsdoc": "3.6.7",
+    "jsdoc": "3.6.11",
     "kafkajs": "1.15.0",
-    "mocha": "9.1.3",
+    "mocha": "9.2.2",
     "npm-run-all": "4.1.5",
     "nyc": "15.1.0",
     "standard": "14.3.4"
