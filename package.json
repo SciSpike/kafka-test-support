@@ -1,6 +1,6 @@
 {
   "name": "@ballistagroup/kafka-test-support",
-  "version": "0.3.0-rc.0",
+  "version": "0.3.0",
   "description": "Kafka Node.js Development Test Support distrary",
   "repository": {
     "type": "git",
